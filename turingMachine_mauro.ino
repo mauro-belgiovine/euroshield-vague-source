@@ -1,18 +1,23 @@
 /* 
  *  
  *  
- This is a liberally Music Thing's Turing Machine-Inspired sequencer. 
+       
+ This is a liberally inspiredMusic Thing's Turing Machine-like sequencer. 
  It will be a personal attempt to a quasi random sequencer 
  
  The code used as a Base is by Jim Bumgardner (8/11/2018) and all its code rights are reserved to him 
  (now there is only some commented code, that will be used as my code base).
 
+
+ Mauro Belgiovine, Sunday 24/11/2019
+
 Following, the original code comments for reference:
 
-****************************************************
-****************************************************
+  *
+  ********
+  ********
+  *
 
- 
  An implementation of a (Make Noise) Turing-Machine style random-looping sequencer for the 1010music Euroshield.  
    Good for Steve Reichian patterns that slowly mutate.
    I don't own one of these, but used the manual for the simpler 2hp TM module as a reference.
