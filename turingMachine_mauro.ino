@@ -1,78 +1,12 @@
 /* 
  *  
- *  
-       
- This is a liberally inspiredMusic Thing's Turing Machine-like sequencer. 
- It will be a personal attempt to a quasi random sequencer 
- 
- The code used as a Base is by Jim Bumgardner (8/11/2018) and all its code rights are reserved to him 
- (now there is only some commented code, that will be used as my code base).
-
-
+ *
+ This is a random sequencer inspired by Music Thing's Turing Machine. 
  Mauro Belgiovine, Sunday 24/11/2019
-
-Following, the original code comments for reference:
-
-  *
-  ********
-  ********
-  *
-
- An implementation of a (Make Noise) Turing-Machine style random-looping sequencer for the 1010music Euroshield.  
-   Good for Steve Reichian patterns that slowly mutate.
-   I don't own one of these, but used the manual for the simpler 2hp TM module as a reference.
- 
-   -- Jim Bumgardner 8/11/2018
-
-BUTTON toggles modes A B C D  (feedback on LEDS 3+4 is supposed to indicate mode)
-       Mode A   Knob 2 Controls Amplitude,    CV-IN-2 controls amplitude.
-       Mode B   Knob 2 controls step-length,  CV-IN-2 controls amplitude
-       Mode C   Knob 2 controls amplitude,    CV-IN-2 controls step-length.
-       Mode D   Knob 2 controls step length., CV-IN-2 controls step length.
-
-     LED 3 indicates mode of KNOB 2
-     LED 4 indicates mode of CV-IN-2
-
-
-CV-IN 1
-     Clock/Trigger - used to control our speed.
-     NOTE: In my first test, I was accidentally using input-2 for everything, which was kind of interesting... It
-     might have resulted in the nice polyrhythmic effect I was getting..
-
-CV-IN 2
-     Controls Amplitude or step-length, depending on mode (store last value otherwise). (may want to play with probabilty as well).
-     LED 4 indicates mode of CV-IN-2
-
-CV-OUT 1
-     Step-wise output
-
-CV-OUT 2
-     Smooth output (kinda wonky at the moment, I may change how this works in the future...).
-
-KNOB 1. 
-     Probability
-        Goes from Full Random to Locked Sequence
-          (so likelihood that each step of sequence is a new value from 0->100%)
-          I'm getting a very Steve Reichian effect with the knob at around 80% and the output going into a scale quantizer.
-
-KNOB 2.
-   Controls amplitude (interval size) or step-length.  When combined with CV (modes A,D), it provides an offset which the CV adds to.
-   LED 3 indicates mode of KNOB 2
-   
-At the moment, I'm only seeing LEDs 1 and 2, so I suspect my button detection needs work...
-
-LED 1. On during beat-1 of sequence.
-LED 2. On 1st half every beat (square duty).  Probably need to shorten this.
-LED 3. Mode indicator for KNOB 2
-LED 4. Mode indicator for CV-IN-2
-
-TODO: Work out how MIDI works. And use MIDI-IN for clock and MIDI-OUT for note trigering or CC.
- 
-Rev 1  First try, leds weren't working and I was using CV-IN-2 for both inputs.
-Rev 2  Fixed the LEDs, button press not working..
-Rev 3  Fixed the button and debounced it.
-
- *********************************************/
+ *
+ *
+ *
+ */
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -91,7 +25,7 @@ enum { MODE_A, MODE_B, MODE_C, MODE_D };
 int     ledPins[ledPinCount] = { 3, 4, 5, 6 };
 int     clockUp = 0;
 float   seqSteps[32];
-float   out1 = 0;
+float   chance = 0;
 int     tmMode = 0;
 int     stepNumber = 0;
 float   lastAmplitude = 0.5;
@@ -116,6 +50,19 @@ AudioConnection          patchCord3(dc1, 0, audioOutput, 0);
 AudioConnection          patchCord4(dc2, 0, audioOutput, 1);
 AudioControlSGTL5000     sgtl5000_1;
 
+byte b[4] = { random(16), random(16), random(16), random(16) } ; // change with appropriate function
+uint32_t register_32b = (b[3] << 24) | (b[2] << 16) | ( b[1] << 8 ) | (b[0]); //register initial status (random)
+uint16_t voct = register_32b >> 16;
+byte last = 0;
+byte flip = 0;
+float probKnob = 0;
+
+void printBin(unsigned n) 
+{ 
+    unsigned i; 
+    for (i = 1 << 31; i > 0; i = i / 2) 
+        (n & i)? Serial.print("1"): Serial.print("0"); 
+} 
 
 void setup()
 {
@@ -140,18 +87,50 @@ void setup()
   lastBeatMS = millis();
 
   Serial.begin(38400);
+
+  Serial.println(register_32b);
+  Serial.println(voct);
+  
 }
 
 
 /*TODO:
  * 
 [DONE]  FIRST STEP: GENERATE JUST RANDOM DATA AT EVERY CLOCK
-[ -- ]  SECOND STEP: read the music thing documentation https://musicthing.co.uk/collateral/TuringRev1Docs.pdf
+[DONE]  SECOND STEP: read the music thing documentation https://musicthing.co.uk/collateral/TuringRev1Docs.pdf
               try emulate the functioning of that
 *
 */
 void loop()
 {
+
+  // Check for button presses here...
+  int buttonState = digitalRead(buttonPin);
+  
+  if (buttonState != lastButtonState) { // Probably needs debouncing, can't tell yet cause LEDs didn't work when I tested...
+      long ms = millis();
+      if (ms - lastButtonMS > debounceMS) {
+        if (buttonState == LOW) {
+          tmMode = (tmMode + 1) % 4;
+          digitalWrite(ledPins[2], (tmMode & 1) > 0? HIGH : LOW);
+          digitalWrite(ledPins[3], (tmMode & 2) > 0? HIGH : LOW);
+        }
+      }
+      lastButtonMS = ms;
+      lastButtonState = buttonState;
+  }
+
+  switch (tmMode) {
+    case MODE_A:  // 
+        break;
+    case MODE_B:  // 
+        break;
+    case MODE_C:  // 
+        break;
+    case MODE_D:  //
+      break;
+   }
+  
   
  if (input_1.available()) {
       last_input_1 = input_1.read();
@@ -160,6 +139,7 @@ void loop()
 
   if (input_2.available()) {
       last_input_2 = input_2.read();
+      
   }
   
   float trig1 = last_input_1;
@@ -169,141 +149,38 @@ void loop()
 
     if (clockUp == 0) { // we are starting a new beat
       clockUp = 1;
-      digitalWrite(ledPins[1], HIGH);
-      out1 = (random(1024)/1024.0);
-
+      digitalWrite(ledPins[0], HIGH);
+      chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
       
+      flip = 0; // debug only 
+      last = register_32b & 1;
+      //  compute probability. determine if change is going to occur
+      probKnob = analogRead(upperPotInput)/1023.0; // 0-1023 
+      if (chance > probKnob) { //  if change must occur, flip the last value
+        flip = 1;
+        last = ~last & 1;
+      }
+      
+      register_32b = register_32b >> 1; // right shift, 1 bit
+      register_32b = (last << 31) | register_32b;
+      
+      //Serial.println(register_32b, BIN);
+      //printBin(register_32b);
+      //if (flip) Serial.print("-- Flip");
+      //Serial.println();
     }
   }else {
     if (clockUp > 0) { // else trig is down  
-            digitalWrite(ledPins[1], LOW);
+            digitalWrite(ledPins[0], LOW);
             clockUp = 0;       
         }
   }
+
   
-  
-  dc1.amplitude(out1);  
+  float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
+  voct = register_32b >> 16; 
+  dc1.amplitude((((float) voct) / 65535.0)*lowerPotVal); // [0..1] from 16 bit variable
   //Serial.println(dc1.read());
+ 
   
 }
-
-
-
-/*
-float getAmplitude()
-{
-    switch (tmMode) {
-    case MODE_A: // knob only
-       lastAmplitude = (analogRead(lowerPotInput)-512) / 512.0;
-       break;
-    case MODE_B: // cv
-       lastAmplitude = last_input_2;
-       break;
-    case MODE_C: // both knob and cv
-       lastAmplitude = last_input_2 + (analogRead(lowerPotInput)-512) / 512.0;
-       break;
-    case MODE_D: // no change
-       break;
-    }
-    return lastAmplitude;
-}
-
-int getSeqLength() { // 1->32
-    switch (tmMode) {
-    case MODE_A:  // NO CHANGE
-        //Serial.println("A");
-        break;
-    case MODE_B:  // KNOB
-        //Serial.println("B");
-        lastSeqLength = 1 + analogRead(lowerPotInput)/32;
-        break;
-    case MODE_C:  // CV
-        //Serial.println("C");
-        lastSeqLength = 1 + (int) (last_input_2*32.0);
-        break;
-    case MODE_D:  // CV, KNOB
-        //Serial.println("D");
-        lastSeqLength = 1 + analogRead(lowerPotInput)/32 + (int) (last_input_2*32);
-    }
-    lastSeqLength = constrain(lastSeqLength, 1, 32);
-    return lastSeqLength;
-}
-
-void loop()
-{
-    // Check for button presses here...
-    int buttonState = digitalRead(buttonPin);
-    
-    if (buttonState != lastButtonState) { // Probably needs debouncing, can't tell yet cause LEDs didn't work when I tested...
-        long ms = millis();
-        if (ms - lastButtonMS > debounceMS) {
-          if (buttonState == LOW) {
-            tmMode = (tmMode + 1) % 4;
-            digitalWrite(ledPins[2], (tmMode & 1) > 0? HIGH : LOW);
-            digitalWrite(ledPins[3], (tmMode & 2) > 0? HIGH : LOW);
-          }
-        }
-        lastButtonMS = ms;
-        lastButtonState = buttonState;
-    }
-
-    if (input_1.available()) {
-        last_input_1 = input_1.read();
-        //Serial.println(last_input_1); // TODO: SOMEHOW THE INPUT IS NOT PERFECTLY SQARE AND AFFECTS THE NOTE PITCH (1 V/OCT) WITH A SORT OF BENDING OF THE NOTE. 
-    }
-
-    if (input_2.available()) {
-        last_input_2 = input_2.read();
-    }
-
-    float trig = last_input_1;
-    // check if we are starting a new beat
-    if (trig > 0.5) {
-
-        if (clockUp == 0) { // we are starting a new beat
-            clockUp = 1;
-            long tm = millis();
-            clockRate = tm - lastBeatMS;  // ms since last beat
-            
-            lastBeatMS = tm; 
-
-            //  compute probability. determine if change is going to occur
-            unsigned int probKnob = analogRead(upperPotInput); // 0-1023 
-            
-            if (random(1024) > probKnob) { //  if change must occur, change the step level
-                float amp_k2 = getAmplitude(); // get amplitude from #2 knob
-                out1 = 0.5 + (amp_k2 * (random(1024)-512)/512.0)*0.5;
-                out1 = constrain(out1, 0.0, 1.0);     
-            } else {//  else (no change)
-                out1 = seqSteps[stepNumber];
-            }
-
-            
-            dc1.amplitude(out1);            // stepped version...
-            
-            //dc2.amplitude(out1, clockRate); // linear interpolate version (sounds wonky at the moment...)
-            seqSteps[stepNumber] = out1;    // save current step for re-use
-            digitalWrite(ledPins[0], stepNumber == 0? HIGH : LOW);
-            digitalWrite(ledPins[1], HIGH);
-                
-
-
-            stepNumber += 1;
-            
-            // determine next stepNumber
-            int seqLength = getSeqLength();
-            if (stepNumber >= seqLength) {
-                stepNumber = 0;
-            }
-        }
-    } 
-    else { // else trig is down
-        if (clockUp > 0) {
-            clockUp = 0;
-            digitalWrite(ledPins[1], LOW);
-        }
-    }
-
-    Serial.println(dc1.read());
-}
-*/
