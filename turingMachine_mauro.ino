@@ -57,6 +57,8 @@ byte last = 0;
 byte flip = 0;
 float probKnob = 0;
 
+float in_offset = 0;
+
 void printBin(unsigned n) 
 { 
     unsigned i; 
@@ -119,17 +121,6 @@ void loop()
       lastButtonMS = ms;
       lastButtonState = buttonState;
   }
-
-  switch (tmMode) {
-    case MODE_A:  // 
-        break;
-    case MODE_B:  // 
-        break;
-    case MODE_C:  // 
-        break;
-    case MODE_D:  //
-      break;
-   }
   
   
  if (input_1.available()) {
@@ -139,7 +130,10 @@ void loop()
 
   if (input_2.available()) {
       last_input_2 = input_2.read();
-      
+      //Serial.println(last_input_2);
+      //in_offset = ((last_input_2/1.0)-.5);
+      in_offset = last_input_2;
+      Serial.println();
   }
   
   float trig1 = last_input_1;
@@ -176,11 +170,24 @@ void loop()
         }
   }
 
+
+  switch (tmMode) {
+    
+    case MODE_A:  // input_1 = CLK, input_2 = offset/sequence
+          float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
+          voct = register_32b >> 16; 
+          float write_val = (((float) voct) / 65535.0)*lowerPotVal; // [0..1] from 16 bit variable
+          dc1.amplitude((write_val + in_offset)/2.0); // [0..1] from 16 bit variable
+          // TODO not really what I want  ^^^    --->   if we remove the offset, the max value would be 0.5. 
+          // Find another solution that permits also normal turing [0..1 values]  when nothing is connected to input_2
+        break;
+    case MODE_B:  // 
+        break;
+    case MODE_C:  // 
+        break;
+    case MODE_D:  //
+      break;
+   }
   
-  float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
-  voct = register_32b >> 16; 
-  dc1.amplitude((((float) voct) / 65535.0)*lowerPotVal); // [0..1] from 16 bit variable
-  //Serial.println(dc1.read());
- 
   
 }
