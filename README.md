@@ -11,3 +11,6 @@ This is a Random Sequencer inspired by Music Thing's Turing Machine (https://mus
 - Lower knob -> scale
 - CV Input #1 - Clock in
 - CV Output #1 - Sequence step CV out
+
+## Update 12/8/2019
+- CV Input #2 - Offset/Sequence (to be refined)
