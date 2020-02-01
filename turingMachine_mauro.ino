@@ -56,6 +56,9 @@ uint16_t voct = register_32b >> 16;
 byte last = 0;
 byte flip = 0;
 float probKnob = 0;
+bool isPulse = false;
+uint32_t pulse_duration = 10; //ms
+uint32_t pulse_last;
 
 float in_offset = 0;
 
@@ -90,8 +93,8 @@ void setup()
 
   Serial.begin(38400);
 
-  Serial.println(register_32b);
-  Serial.println(voct);
+  //Serial.println(register_32b);
+  //Serial.println(voct);
   
 }
 
@@ -109,7 +112,7 @@ void loop()
   // Check for button presses here...
   int buttonState = digitalRead(buttonPin);
   
-  if (buttonState != lastButtonState) { // Probably needs debouncing, can't tell yet cause LEDs didn't work when I tested...
+  if (buttonState != lastButtonState) {
       long ms = millis();
       if (ms - lastButtonMS > debounceMS) {
         if (buttonState == LOW) {
@@ -133,7 +136,6 @@ void loop()
       //Serial.println(last_input_2);
       //in_offset = ((last_input_2/1.0)-.5);
       in_offset = last_input_2;
-      Serial.println();
   }
   
   float trig1 = last_input_1;
@@ -158,11 +160,23 @@ void loop()
       register_32b = register_32b >> 1; // right shift, 1 bit
       register_32b = (last << 31) | register_32b;
       
-      //Serial.println(register_32b, BIN);
-      //printBin(register_32b);
-      //if (flip) Serial.print("-- Flip");
-      //Serial.println();
-    }
+      
+      
+      // PRINT register bits 
+      printBin(register_32b);
+      //if (flip) Serial.print(" -- Flip");
+      if ((register_32b >> 31)) Serial.print(" -- pulse");
+      Serial.println();
+      
+      
+      if ((register_32b >> 31)) {
+        isPulse = true;
+        pulse_last = millis();
+      }
+
+      
+      }
+     
   }else {
     if (clockUp > 0) { // else trig is down  
             digitalWrite(ledPins[0], LOW);
@@ -170,6 +184,8 @@ void loop()
         }
   }
 
+  if((millis() - pulse_last) >= pulse_duration)
+        isPulse = false;
 
   switch (tmMode) {
     
@@ -177,7 +193,16 @@ void loop()
           float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
           voct = register_32b >> 16; 
           float write_val = (((float) voct) / 65535.0)*lowerPotVal; // [0..1] from 16 bit variable
-          dc1.amplitude((write_val + in_offset)/2.0); // [0..1] from 16 bit variable
+          dc1.amplitude(write_val);
+          
+          if (isPulse){
+            dc2.amplitude(1.0);
+          }else{
+            dc2.amplitude(0.0);
+          }
+
+          //Serial.println(dc2.read());
+          //dc1.amplitude((write_val + in_offset)/2.0); // [0..1] from 16 bit variable
           // TODO not really what I want  ^^^    --->   if we remove the offset, the max value would be 0.5. 
           // Find another solution that permits also normal turing [0..1 values]  when nothing is connected to input_2
         break;
