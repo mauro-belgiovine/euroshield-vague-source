@@ -11,7 +11,9 @@ This is a Random Sequencer inspired by Music Thing's Turing Machine (https://mus
 - *Lower knob* -> scale
 - *CV Input #1* - Clock in
 - *CV Output #1* - Sequence step CV out
+- *CV Output #2* - Pulse 
 
-# Notes
-### Update 12/8/2019
+------------------
+
+# TODOs
 - (to be refined) *CV Input #2* - Offset/Sequence is added to the internal sequencer note. Current CV Output #1 is computed as `(input_1 + input_2)/2`. 
