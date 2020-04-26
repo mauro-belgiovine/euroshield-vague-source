@@ -26,7 +26,7 @@ int     ledPins[ledPinCount] = { 3, 4, 5, 6 };
 int     clockUp = 0;
 float   seqSteps[32];
 float   chance = 0;
-int     tmMode = 0;
+int     tmMode = 1;
 int     stepNumber = 0;
 float   lastAmplitude = 0.5;
 int     lastSeqLength = 16;
@@ -54,10 +54,11 @@ byte b[4] = { random(16), random(16), random(16), random(16) } ; // change with 
 uint32_t register_32b = (b[3] << 24) | (b[2] << 16) | ( b[1] << 8 ) | (b[0]); //register initial status (random)
 uint16_t voct = register_32b >> 16;
 byte last = 0;
-byte flip = 0;
+//byte flip = 0; //DEBUG only
+float trig1;
 float probKnob = 0;
 bool isPulse = false;
-uint32_t pulse_duration = 10; //ms
+uint32_t pulse_duration = 25; //ms
 uint32_t pulse_last;
 
 float in_offset = 0;
@@ -91,7 +92,7 @@ void setup()
   }
   lastBeatMS = millis();
 
-  Serial.begin(38400);
+  //Serial.begin(38400);
 
   //Serial.println(register_32b);
   //Serial.println(voct);
@@ -117,102 +118,149 @@ void loop()
       if (ms - lastButtonMS > debounceMS) {
         if (buttonState == LOW) {
           tmMode = (tmMode + 1) % 4;
-          digitalWrite(ledPins[2], (tmMode & 1) > 0? HIGH : LOW);
-          digitalWrite(ledPins[3], (tmMode & 2) > 0? HIGH : LOW);
+          //digitalWrite(ledPins[2], (tmMode & 1) > 0? HIGH : LOW);
+          //digitalWrite(ledPins[3], (tmMode & 2) > 0? HIGH : LOW);
+          clockUp = 0;
         }
       }
       lastButtonMS = ms;
       lastButtonState = buttonState;
   }
+
+
+  if(tmMode == MODE_A){
+    /* 
+     *  input_1 = CLK, 
+     *  input_2 = offset/sequence, 
+     *  out1 = sequence, 
+     *  out2 = pulse1 (first bit of register)
+    */
+    if (input_1.available()) {
+        last_input_1 = input_1.read();
+        //Serial.println(last_input_1); // TODO: SOMEHOW THE INPUT from MN 0-coast "CLK" IS NOT PERFECTLY SQARE AND AFFECTS THE NOTE PITCH (1 V/OCT) WITH A SORT OF BENDING OF THE NOTE. 
+    }
   
-  
- if (input_1.available()) {
-      last_input_1 = input_1.read();
-      //Serial.println(last_input_1); // TODO: SOMEHOW THE INPUT from MN 0-coast "CLK" IS NOT PERFECTLY SQARE AND AFFECTS THE NOTE PITCH (1 V/OCT) WITH A SORT OF BENDING OF THE NOTE. 
-  }
-
-  if (input_2.available()) {
-      last_input_2 = input_2.read();
-      //Serial.println(last_input_2);
-      //in_offset = ((last_input_2/1.0)-.5);
-      in_offset = last_input_2;
-  }
-  
-  float trig1 = last_input_1;
-  
-  if (trig1 > 0.5) {
-
-
-    if (clockUp == 0) { // we are starting a new beat
-      clockUp = 1;
-      digitalWrite(ledPins[0], HIGH);
-      chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
-      
-      flip = 0; // debug only 
-      last = register_32b & 1;
-      //  compute probability. determine if change is going to occur
-      probKnob = analogRead(upperPotInput)/1023.0; // 0-1023 
-      if (chance > probKnob) { //  if change must occur, flip the last value
-        flip = 1;
-        last = ~last & 1;
-      }
-      
-      register_32b = register_32b >> 1; // right shift, 1 bit
-      register_32b = (last << 31) | register_32b;
-      
-      
-      
-      // PRINT register bits 
-      printBin(register_32b);
-      //if (flip) Serial.print(" -- Flip");
-      if ((register_32b >> 31)) Serial.print(" -- pulse");
-      Serial.println();
-      
-      
-      if ((register_32b >> 31)) {
-        isPulse = true;
-        pulse_last = millis();
-      }
-
-      
-      }
-     
-  }else {
-    if (clockUp > 0) { // else trig is down  
-            digitalWrite(ledPins[0], LOW);
-            clockUp = 0;       
-        }
-  }
-
-  if((millis() - pulse_last) >= pulse_duration)
-        isPulse = false;
-
-  switch (tmMode) {
+    if (input_2.available()) {
+        last_input_2 = input_2.read();
+        //Serial.println(last_input_2);
+        //in_offset = ((last_input_2/1.0)-.5);
+        in_offset = last_input_2;
+    }
     
-    case MODE_A:  // input_1 = CLK, input_2 = offset/sequence
-          float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
-          voct = register_32b >> 16; 
-          float write_val = (((float) voct) / 65535.0)*lowerPotVal; // [0..1] from 16 bit variable
-          dc1.amplitude(write_val);
-          
-          if (isPulse){
-            dc2.amplitude(1.0);
-          }else{
-            dc2.amplitude(0.0);
+    trig1 = last_input_1;    
+    if (trig1 > 0.5) {
+      if (clockUp == 0) { // we are starting a new beat
+        clockUp = 1;
+        digitalWrite(ledPins[0], HIGH);
+        chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
+        
+        //flip = 0; // debug only 
+        last = register_32b & 1;
+        //  compute probability. determine if change is going to occur
+        probKnob = analogRead(upperPotInput)/1023.0; // 0-1023 
+        if (chance > probKnob) { //  if change must occur, flip the last value
+          //flip = 1;
+          last = ~last & 1;
+        }
+        
+        register_32b = register_32b >> 1; // right shift, 1 bit
+        register_32b = (last << 31) | register_32b;
+        
+        
+        /*
+        // PRINT register bits 
+        printBin(register_32b);
+        //if (flip) Serial.print(" -- Flip");
+        if ((register_32b >> 31)) Serial.print(" -- pulse");
+        Serial.println();
+        */
+        
+        if ((register_32b >> 31)) {
+          isPulse = true;
+          pulse_last = millis();
+        }
+  
+        
+      }
+       
+    }else {
+      // else trig is down 
+      if (clockUp > 0) {  
+              digitalWrite(ledPins[0], LOW);
+              clockUp = 0;       
           }
+    }
+  
+    if((millis() - pulse_last) >= pulse_duration)
+          isPulse = false;
 
-          //Serial.println(dc2.read());
-          //dc1.amplitude((write_val + in_offset)/2.0); // [0..1] from 16 bit variable
-          // TODO not really what I want  ^^^    --->   if we remove the offset, the max value would be 0.5. 
-          // Find another solution that permits also normal turing [0..1 values]  when nothing is connected to input_2
-        break;
-    case MODE_B:  // 
-        break;
-    case MODE_C:  // 
-        break;
-    case MODE_D:  //
-      break;
-   }
+
+    
+    float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
+    voct = register_32b >> 16; 
+    float write_val = (((float) voct) / 65535.0)*lowerPotVal; // [0..1] from 16 bit variable
+    dc1.amplitude(write_val);
+    
+    if (isPulse){
+      dc2.amplitude(1.0);
+    }else{
+      dc2.amplitude(0.0);
+    }
+
+    //Serial.println(dc2.read());
+    //dc1.amplitude((write_val + in_offset)/2.0); // [0..1] from 16 bit variable
+    // TODO not really what I want  ^^^    --->   if we remove the offset, the max value would be 0.5. 
+    // Find another solution that permits also normal turing [0..1 values]  when nothing is connected to input_2
+      
+  }else if(tmMode == MODE_B){
+
+    if (input_1.available()) {
+      last_input_1 = input_1.read();
+    }
   
-  
+    if (input_2.available()) {
+      last_input_2 = input_2.read();
+    }
+
+    trig1 = last_input_1;
+    
+    if (trig1 > 0.5) {
+      
+      // we are starting a new beat
+      if (clockUp == 0) { 
+        digitalWrite(ledPins[0], HIGH);
+        clockUp = 1;
+        chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
+        probKnob = analogRead(upperPotInput)/1023.0; // 0-1023 
+        /*Serial.print(chance);
+        Serial.print(' ');
+        Serial.print(probKnob);
+        Serial.print(' ');
+        Serial.println(chance < probKnob);*/
+        if (chance < probKnob) { //  if change must occur, flip the last value
+          isPulse = true;
+          pulse_last = millis();
+        }
+      }
+
+    }else{
+      // else trig is down
+      if (clockUp > 0) {   
+        digitalWrite(ledPins[0], LOW);
+        clockUp = 0;       
+      }
+    }
+
+    if((millis() - pulse_last) >= pulse_duration)
+      isPulse = false;
+
+    if (isPulse){
+      dc2.amplitude(1.0);
+      
+    }else{
+      dc2.amplitude(0.0);
+    }
+  } else if (tmMode == MODE_C){
+  } else if (tmMode == MODE_D){
+  }
 }
