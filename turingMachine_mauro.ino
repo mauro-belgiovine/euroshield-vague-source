@@ -24,9 +24,10 @@ enum { MODE_A, MODE_B, MODE_C, MODE_D };
 
 int     ledPins[ledPinCount] = { 3, 4, 5, 6 };
 int     clockUp = 0;
+int     clockUp2 = 0;
 float   seqSteps[32];
 float   chance = 0;
-int     tmMode = 1;
+int     tmMode = MODE_B;
 int     stepNumber = 0;
 float   lastAmplitude = 0.5;
 int     lastSeqLength = 16;
@@ -56,10 +57,14 @@ uint16_t voct = register_32b >> 16;
 byte last = 0;
 //byte flip = 0; //DEBUG only
 float trig1;
+float trig2;
 float probKnob = 0;
+float probKnob2 = 0;
 bool isPulse = false;
+bool isPulse2 = false;
 uint32_t pulse_duration = 25; //ms
 uint32_t pulse_last;
+uint32_t pulse_last2;
 
 float in_offset = 0;
 
@@ -222,6 +227,7 @@ void loop()
       last_input_2 = input_2.read();
     }
 
+    /***** BERNOULLI GATE 1 *******/
     trig1 = last_input_1;
     
     if (trig1 > 0.5) {
@@ -232,11 +238,7 @@ void loop()
         clockUp = 1;
         chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
         probKnob = analogRead(upperPotInput)/1023.0; // 0-1023 
-        /*Serial.print(chance);
-        Serial.print(' ');
-        Serial.print(probKnob);
-        Serial.print(' ');
-        Serial.println(chance < probKnob);*/
+        
         if (chance < probKnob) { //  if change must occur, flip the last value
           isPulse = true;
           pulse_last = millis();
@@ -255,11 +257,51 @@ void loop()
       isPulse = false;
 
     if (isPulse){
-      dc2.amplitude(1.0);
-      
+      dc1.amplitude(1.0);
     }else{
+      dc1.amplitude(0.0);
+    }
+
+    /****** BERNOULLI GATE 2 ********/
+    trig2 = last_input_2;
+    
+    if (trig2 > 0.5) {
+      
+      // we are starting a new beat
+      if (clockUp2 == 0) { 
+        digitalWrite(ledPins[1], HIGH);
+        clockUp2 = 1;
+        chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
+        probKnob2 = analogRead(lowerPotInput)/1023.0; // 0-1023 
+
+        if (chance < probKnob2) { //  if change must occur, flip the last value
+          isPulse2 = true;
+          pulse_last2 = millis();
+        }
+      }
+
+    }else{
+      // else trig is down
+      if (clockUp2 > 0) {   
+        digitalWrite(ledPins[1], LOW);
+        clockUp2 = 0;       
+      }
+    }
+
+    if((millis() - pulse_last2) >= pulse_duration)
+      isPulse2 = false;
+
+    if (isPulse2){
+      //Serial.println(1);
+      dc2.amplitude(1.0);
+    }else{
+      //Serial.println(0);
       dc2.amplitude(0.0);
     }
+
+    //Serial.println(input_2.read());
+
+    
   } else if (tmMode == MODE_C){
   } else if (tmMode == MODE_D){
   }
