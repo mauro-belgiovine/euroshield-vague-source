@@ -1,5 +1,5 @@
 # Vague Source for 1010Music Euroshield
-Vague Source is a mix of pseudo-random techniques and utilities that I often use in my Eurorack explorations, condensed together in a single module. I have always been in interested in understanding and be able to program these kind of functialities in a module. The code is intended for the programmable 
+Vague Source is a mix of pseudo-random techniques and utilities that I often use in my Eurorack explorations, condensed together in a single module. I have always been in interested in understanding and being able to program these kind of functialities in a module. The code is intended for the programmable, Teensy-based 
 [Euroshield](https://1010music.com/product/euroshield1) Eurorack module (now discontinued), but potentially could be adapted to other Teensy-based platforms. The project is open-source and welcome to contributions. As for now, the following modes are available:
   * `Mode A` : a random sequencer based on [Music Thing's Turing Machine](https://musicthing.co.uk/collateral/TuringRev1Docs.pdf). 
   * `Mode B`: a dual Bernoulli gate, inspired by [MI Branches](https://mutable-instruments.net/modules/branches/)
