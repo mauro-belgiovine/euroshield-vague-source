@@ -6,7 +6,7 @@ This code is intended for the programmable
   * `Mode C`: TBD
   * `Mode D`: TBD
   
- If you use this code, have comments or would like to contribute to the project, please drop me a line or consider a donation to my Venmo or Paypal account:
+Note the default mode is `MODE B`. If you use this code, have comments or would like to contribute to the project, please drop me a line or consider buying me a beer by donating to my [Paypal](mbelgiovine89@gmail.com) account. 
  
 
 # How to load the code
@@ -17,22 +17,21 @@ This code is intended for the programmable
 
 # How to use it
 There are four Modes available on the module and it is possible to switch to the next mode by pressing the button on the Euroshield. Based on the active Mode , the module operates in this way:
-* **Mode A**: Emulates the original Turing Machine, sending out sequences and pulses based on the clock input
+* **MODE A**: Emulates the original Turing Machine, sending out sequences and pulses based on the clock input
   * *Upper knob*: probabilty of change
   * *Lower knob*: scale
   * *CV Input #1*: Clock in
   * *CV Output #1*: Sequence step CV out
   * *CV Output #2*: Pulse-1 = for each clock, sends out a trigger when the first bit of register is 1.
 
- * **Mode B**: emulates two independent Bernoulli gates, whose probability is controlled by the upper and lower control knobs respectively. The input triggers are associated to the 0 and 1 leds of the the Euroshield, respectively, for visual feedback.
+* **MODE B**: emulates two independent Bernoulli gates, whose probability is controlled by the upper and lower control knobs respectively. The input triggers are associated to the 0 and 1 leds of the the Euroshield, respectively, for visual feedback.
   * *Upper knob*: probability for trigger #1
   * *Lower knob*: probability for trigger #2
   * *CV Input #1*: trigger #1
   * *CV Input #2*: trigger #2
   * *CV Output #1*: trigger #1 output after probability 
   * *CV Output #2*: trigger # output after probability
-
-
+  
 ------------------
 
 # TODOs
