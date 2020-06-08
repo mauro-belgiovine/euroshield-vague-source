@@ -6,7 +6,9 @@ Vague Source is a mix of pseudo-random techniques that I often use in my Eurorac
   * `Mode C`: TBD
   * `Mode D`: TBD
   
-Note the default mode is `MODE B`. If you use this code, have comments or would like to contribute to the project, please drop me a line or consider buying me a beer by donating to my [Paypal](mbelgiovine89@gmail.com) account. 
+Note the default mode is `MODE B`. If you use this code, have comments or would like to contribute to the project, please drop me a line or consider buying me a beer by donating to my [Paypal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=AYW2AZK29XNUS&currency_code=USD&source=url) account. 
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=AYW2AZK29XNUS&currency_code=USD&source=url)
  
 
 # How to load the code
