@@ -3,8 +3,8 @@ Vague Source is a mix of pseudo-random techniques and utilities that I often use
 [Euroshield](https://1010music.com/product/euroshield1) Eurorack module (now discontinued), but potentially could be adapted to other Teensy-based platforms. As for now, the following modes are available:
   * `Mode A` : a random sequencer based on [Music Thing's Turing Machine](https://musicthing.co.uk/collateral/TuringRev1Docs.pdf). 
   * `Mode B`: a dual Bernoulli gate, inspired by [MI Branches](https://mutable-instruments.net/modules/branches/)
-  * `Mode C`: (*Proposed*) Random walk
-  * `Mode D`: (*Proposed*) Random burst clock
+  * `Mode C`: Random walk (*Proposed, not yet implemented*)
+  * `Mode D`: Random burst clock (*Proposed, not yet implemented*)
   
 Note the default mode is `MODE B`. This project is still in infancy and is moved mainly by my curiosity. My goal is to understand and possibly design new functionalities for Eurorack synths based on randomness. The project is open-source and welcome to contributions. If you use this code, have comments or would like to contribute to the project, please drop me a line or consider buying me a beer by donating to my [Paypal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=AYW2AZK29XNUS&currency_code=USD&source=url) account. 
 
