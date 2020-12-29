@@ -129,7 +129,7 @@ void printBin(unsigned n)
         (n & i)? Serial.print("1"): Serial.print("0"); 
 } 
 
-void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int *clockUp, bool *isPulse, int *pulse_last, AudioSynthWaveformDc *dc, int potInput){
+void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int *clockUp, bool *isPulse, int *pulse_last, AudioSynthWaveformDc *dc, int potInput, int lp){
 
   float probKnob = 0;
   float chance = 0;
@@ -158,7 +158,7 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
   }else{
     // else trig is down
     if (*clockUp > 0) {   
-      digitalWrite(ledPins[0], LOW);
+      digitalWrite(ledPins[lp], LOW);
       *clockUp = 0;       
     }
   }
@@ -263,8 +263,8 @@ void dualBernoulliGate()
 {
 
 
-  BernoulliGate(&input_1, &trig1, &last_input_1,  &clockUp, &isPulse, &pulse_last, &dc1, upperPotInput);
-  BernoulliGate(&input_2, &trig2, &last_input_2,  &clockUp2, &isPulse2, &pulse_last2, &dc2, lowerPotInput);
+  BernoulliGate(&input_1, &trig1, &last_input_1,  &clockUp, &isPulse, &pulse_last, &dc1, upperPotInput, 0);
+  BernoulliGate(&input_2, &trig2, &last_input_2,  &clockUp2, &isPulse2, &pulse_last2, &dc2, lowerPotInput, 1);
 
 
   /*
