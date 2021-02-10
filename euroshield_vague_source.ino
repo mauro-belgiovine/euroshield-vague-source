@@ -137,14 +137,18 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
   if (input->available()) {
     *last_input = input->read();
   }
+
+  // LED 0-1 are assigned to lower input, LED 2-3 to upper. 
+  // We invert LED pin (lp) for better visualization (pins order goes from lower to higher)
+  lp = 1 - lp; // basically a NOT if lp can be either [0,1]
   
   *trig = *last_input;
   
-  if (*trig > 0.6) {
+  if (*trig > 0.75) {
     
     // we are starting a new beat
     if (*clockUp == 0) { 
-      digitalWrite(ledPins[0], HIGH);
+      digitalWrite(ledPins[lp*2], HIGH);  
       *clockUp = 1;
       chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
       probKnob = analogRead(potInput)/1023.0; // 0-1023 
@@ -158,7 +162,7 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
   }else{
     // else trig is down
     if (*clockUp > 0) {   
-      digitalWrite(ledPins[lp], LOW);
+      digitalWrite(ledPins[lp*2], LOW);
       *clockUp = 0;       
     }
   }
@@ -168,8 +172,10 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
 
   if (*isPulse){
     dc->amplitude(1.0);
+    digitalWrite(ledPins[lp*2+1], HIGH);  // show led 
   }else{
     dc->amplitude(0.0);
+    digitalWrite(ledPins[lp*2+1], LOW);
   }
 
 }
@@ -261,94 +267,8 @@ void turingMachine()
 
 void dualBernoulliGate()
 {
-
-
   BernoulliGate(&input_1, &trig1, &last_input_1,  &clockUp, &isPulse, &pulse_last, &dc1, upperPotInput, 0);
   BernoulliGate(&input_2, &trig2, &last_input_2,  &clockUp2, &isPulse2, &pulse_last2, &dc2, lowerPotInput, 1);
-
-
-  /*
-  if (input_1.available()) {
-    last_input_1 = input_1.read();
-  }
-
-  if (input_2.available()) {
-    last_input_2 = input_2.read();
-  }
-
-  //***** BERNOULLI GATE 1 *******
-  trig1 = last_input_1;
-  
-  if (trig1 > 0.5) {
-    
-    // we are starting a new beat
-    if (clockUp == 0) { 
-      digitalWrite(ledPins[0], HIGH);
-      clockUp = 1;
-      chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
-      probKnob = analogRead(upperPotInput)/1023.0; // 0-1023 
-      
-      if (chance < probKnob) { //  if change must occur, flip the last value
-        isPulse = true;
-        pulse_last = millis();
-      }
-    }
-
-  }else{
-    // else trig is down
-    if (clockUp > 0) {   
-      digitalWrite(ledPins[0], LOW);
-      clockUp = 0;       
-    }
-  }
-
-  if((millis() - pulse_last) >= pulse_duration)
-    isPulse = false;
-
-  if (isPulse){
-    dc1.amplitude(1.0);
-  }else{
-    dc1.amplitude(0.0);
-  }
-
-  //****** BERNOULLI GATE 2 ********
-  trig2 = last_input_2;
-  
-  if (trig2 > 0.5) {
-    
-    // we are starting a new beat
-    if (clockUp2 == 0) { 
-      digitalWrite(ledPins[1], HIGH);
-      clockUp2 = 1;
-      chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
-      probKnob2 = analogRead(lowerPotInput)/1023.0; // 0-1023 
-
-      if (chance < probKnob2) { //  if change must occur, flip the last value
-        isPulse2 = true;
-        pulse_last2 = millis();
-      }
-    }
-
-  }else{
-    // else trig is down
-    if (clockUp2 > 0) {   
-      digitalWrite(ledPins[1], LOW);
-      clockUp2 = 0;       
-    }
-  }
-
-  if((millis() - pulse_last2) >= pulse_duration)
-    isPulse2 = false;
-
-  if (isPulse2){
-    //Serial.println(1);
-    dc2.amplitude(1.0);
-  }else{
-    //Serial.println(0);
-    dc2.amplitude(0.0);
-  }
-  */
-
 }
 
 
