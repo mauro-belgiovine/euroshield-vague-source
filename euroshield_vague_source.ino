@@ -148,7 +148,7 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
     
     // we are starting a new beat
     if (*clockUp == 0) { 
-      digitalWrite(ledPins[lp*2], HIGH);  
+      digitalWrite(ledPins[lp*2], HIGH);    // this LED monitors the input pulses
       *clockUp = 1;
       chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
       probKnob = analogRead(potInput)/1023.0; // 0-1023 
@@ -172,7 +172,9 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
 
   if (*isPulse){
     dc->amplitude(1.0);
-    digitalWrite(ledPins[lp*2+1], HIGH);  // show led 
+    digitalWrite(ledPins[lp*2+1], HIGH);  // the LED above the current clock monitor is used 
+                                          // to give visual feedback of output pulses 
+                                          // (i.e. after probability is applied to IN pulse)
   }else{
     dc->amplitude(0.0);
     digitalWrite(ledPins[lp*2+1], LOW);
