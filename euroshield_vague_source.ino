@@ -129,8 +129,20 @@ void printBin(unsigned n)
         (n & i)? Serial.print("1"): Serial.print("0"); 
 } 
 
+/* 
+* TODO
+* Put all the functions of each mode in separate source files. 
+* Put all these files in a separate folder.
+*/
+
+
 void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int *clockUp, bool *isPulse, int *pulse_last, AudioSynthWaveformDc *dc, int potInput, int lp){
 
+  /* 
+   *  input_N = CLK/PULSE/GATE, 
+   *  out_N = a pulse after a probability set by knob_N
+  */
+  
   float probKnob = 0;
   float chance = 0;
   
@@ -180,6 +192,26 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
     digitalWrite(ledPins[lp*2+1], LOW);
   }
 
+}
+
+#define Nmem 5  //important!! change the init of cv_mem variable (next line) if you want dynamic allocation
+float cv_mem[Nmem] =  {0, 0, 0, 0, 0};
+float offset_max = 0;
+
+float memMax(){
+  
+  int max_v = 0;
+  //int max_i = 0;
+
+  for ( int i = 0; i < sizeof(cv_mem)/sizeof(cv_mem[0]); i++ )
+  {
+    if ( cv_mem[i] > max_v )
+    {
+      max_v = cv_mem[i];
+      //max_i = i;
+    }
+  }
+  return max_v;
 }
 
 void turingMachine()
@@ -240,7 +272,16 @@ void turingMachine()
   float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
   voct = register_32b >> 16; 
   float write_val = (((float) voct) / 65535.0)*lowerPotVal; // [0..1] from 16 bit variable
-  dc1.amplitude(write_val);
+  //dc1.amplitude(write_val);
+
+  //moving maxima on offset (so that when it stays 0., the output value is not constrained to 0.5)
+
+  unsigned int mem_wridx = millis() % Nmem;  // compute the current memory 
+  cv_mem[mem_wridx] = in_offset;   // save current offset input into the mem_wridx-th array cell
+  
+  
+  offset_max = memMax(); // get current max
+  dc1.amplitude((write_val + in_offset)/(1.0+offset_max));
   
   if (isPulse){
     dc2.amplitude(1.0);
@@ -261,8 +302,12 @@ void turingMachine()
   #endif
 
   //dc1.amplitude((write_val + in_offset)/2.0); // [0..1] from 16 bit variable
-  // TODO not really what I want  ^^^    --->   if we remove the offset, the max value would be 0.5. 
-  // Find another solution that permits also normal turing [0..1 values]  when nothing is connected to input_2
+  // TODO:  not really what I want  ^^^    --->   if we remove the offset, the max value would be 0.5. 
+  //        Find another solution that permits also normal turing [0..1 values]  when nothing is connected to input_2
+  //  dc1.amplitude(((write_val + in_offset) - min_v) /(max_v - min_v)) 
+  //            where min_v and max_v are the minimum/maximum value of (write_val + in_offset)
+  //            in this way we normalize everything between 0-1
+  // QUESTION: what's the output range for the turing machine? Maybe we should set that as well through an offset somehow?
 
   
 }
