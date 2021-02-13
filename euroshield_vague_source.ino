@@ -37,7 +37,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <SD.h>
 #include <SerialFlash.h> 
 
-enum { MODE_A, MODE_B, MODE_C, MODE_D };
+enum { MODE_A, MODE_B, MODE_C, MODE_D, MODE_E, MODE_F, MODE_G, MODE_H, MODE_I, MODE_J, MODE_K, MODE_M, MODE_N, MODE_O, MODE_P, MODE_Q };
+#define NMode 4     // IMPORTANT: this will define the number of modes available (up to 16 for now, due to number of LEDs used as indicators (4))
+#define intrvlUI 1000
 
 #define buttonPin     2
 #define upperPotInput 20
@@ -47,6 +49,7 @@ enum { MODE_A, MODE_B, MODE_C, MODE_D };
 #define debounceMS    100
 
 //#define VERBOSE
+bool led_LOCK = false;
 
 int     ledPins[ledPinCount] = { 3, 4, 5, 6 };
 int     clockUp = 0;
@@ -122,9 +125,29 @@ void setup()
   #endif
 }
 
+
+// LEDs UI
+void writeLED(unsigned int p, unsigned int state){
+  if (!led_LOCK) {
+    digitalWrite(ledPins[p], state);
+  }
+}
+
+void showState(unsigned int mode)
+{
+  int N = 4; //log2(NumPins)
+  for (unsigned int n=0; n < N; n++){
+    // first reset the current pin state
+    digitalWrite(ledPins[n], LOW);
+    bool b = bitRead(mode, n);
+    if (b) digitalWrite(ledPins[n], HIGH);
+  }
+}
+
+
 void printBin(unsigned n) 
 { 
-    unsigned i; 
+    unsigned int i; 
     for (i = 1 << 31; i > 0; i = i / 2) 
         (n & i)? Serial.print("1"): Serial.print("0"); 
 } 
@@ -160,7 +183,7 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
     
     // we are starting a new beat
     if (*clockUp == 0) { 
-      digitalWrite(ledPins[lp*2], HIGH);    // this LED monitors the input pulses
+      writeLED(lp*2, HIGH);    // this LED monitors the input pulses
       *clockUp = 1;
       chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
       probKnob = analogRead(potInput)/1023.0; // 0-1023 
@@ -174,7 +197,7 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
   }else{
     // else trig is down
     if (*clockUp > 0) {   
-      digitalWrite(ledPins[lp*2], LOW);
+      writeLED(lp*2, LOW);
       *clockUp = 0;       
     }
   }
@@ -184,12 +207,12 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
 
   if (*isPulse){
     dc->amplitude(1.0);
-    digitalWrite(ledPins[lp*2+1], HIGH);  // the LED above the current clock monitor is used 
+    writeLED(lp*2+1, HIGH);  // the LED above the current clock monitor is used 
                                           // to give visual feedback of output pulses 
                                           // (i.e. after probability is applied to IN pulse)
   }else{
     dc->amplitude(0.0);
-    digitalWrite(ledPins[lp*2+1], LOW);
+    writeLED(lp*2+1, LOW);
   }
 
 }
@@ -236,7 +259,7 @@ void turingMachine()
   if (trig1 > 0.5) {
     if (clockUp == 0) { // we are starting a new beat
       clockUp = 1;
-      digitalWrite(ledPins[0], HIGH);
+      writeLED(0, HIGH);
       chance = (random(1024)/1023.0); // NOTE random(m) function returns an integer in the interval [0,m-1]
       
       flip = 0; // debug only 
@@ -261,7 +284,7 @@ void turingMachine()
   }else {
     // else trig is down 
     if (clockUp > 0) {  
-            digitalWrite(ledPins[0], LOW);
+            writeLED(0, LOW);
             clockUp = 0;       
         }
   }
@@ -318,25 +341,51 @@ void dualBernoulliGate()
   BernoulliGate(&input_2, &trig2, &last_input_2,  &clockUp2, &isPulse2, &pulse_last2, &dc2, lowerPotInput, 1);
 }
 
+int currentShownState = 0;
 
 void loop()
 {
 
   // Check for button presses here...
   int buttonState = digitalRead(buttonPin);
+
+  long ms = millis();
   
   if (buttonState != lastButtonState) {
-      long ms = millis();
       if (ms - lastButtonMS > debounceMS) {
         if (buttonState == LOW) {
-          tmMode = (tmMode + 1) % 4;
-          //digitalWrite(ledPins[2], (tmMode & 1) > 0? HIGH : LOW);
-          //digitalWrite(ledPins[3], (tmMode & 2) > 0? HIGH : LOW);
-          clockUp = 0;
+
+          //visual feedback          
+          if (!led_LOCK){
+            // acquire lock
+            led_LOCK = true;
+            showState(tmMode); // state will be shown until intrvlUI expires
+            Serial.println("lock LED - ON");
+            currentShownState = tmMode;
+          }else{
+            // show next state
+            currentShownState = (currentShownState + 1) % NMode;
+            showState(currentShownState); // state will be shown until intrvlUI 
+          }
+          Serial.print("Showing State ");
+          Serial.println(currentShownState);
+         
         }
       }
       lastButtonMS = ms;
       lastButtonState = buttonState;
+  }
+
+  // check timer to unlock leds
+  if (((ms - lastButtonMS) > intrvlUI) && led_LOCK){
+    led_LOCK = false;
+    Serial.println("lock LED - OFF");
+    if(currentShownState != tmMode) {
+      // go to next mode
+      tmMode = currentShownState;
+      // reset clock
+      clockUp = 0;
+    }
   }
 
 
