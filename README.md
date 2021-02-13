@@ -23,6 +23,7 @@ There are four Modes available on the module and it is possible to switch to the
   * *Upper knob*: probabilty of change
   * *Lower knob*: scale
   * *CV Input #1*: Clock in
+  * *CV Input #2* - Offset/Sequence is added to the internal sequencer note. Current CV Output #1 is computed as `(input_1 + input_2)/(1+input_2_max)`, where `input_2_max` is the max among the most recent `input_2` values.
   * *CV Output #1*: Sequence step CV out
   * *CV Output #2*: Pulse-1 = for each clock, sends out a trigger when the first bit of register is 1.
 
@@ -37,5 +38,5 @@ There are four Modes available on the module and it is possible to switch to the
 ------------------
 
 # TODOs
-- MODE A - *CV Input #2* - Offset/Sequence is added to the internal sequencer note. Current CV Output #1 is computed as `(input_1 + input_2)/2`. It would be better to use another approach (i.e. normalization). NOTE: this is disabled at the moment.
+
 - Define the other modes C,D
