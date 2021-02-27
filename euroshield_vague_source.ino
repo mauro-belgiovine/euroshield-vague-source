@@ -266,7 +266,7 @@ void turingMachine()
       last = register_32b & 1;
       //  compute probability. determine if change is going to occur
       probKnob = analogRead(upperPotInput)/1023.0; // 0-1023 
-      if (chance > probKnob) { //  if change must occur, flip the last value
+      if (chance < probKnob) { //  if change must occur, flip the last value
         flip = 1;
         last = ~last & 1;
       }
