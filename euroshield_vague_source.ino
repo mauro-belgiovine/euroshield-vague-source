@@ -56,7 +56,7 @@ int     clockUp = 0;
 int     clockUp2 = 0;
 float   seqSteps[32];
 float   chance = 0;
-int     tmMode = MODE_B;
+int     tmMode = MODE_A;  // mode at startup
 int     stepNumber = 0;
 float   lastAmplitude = 0.5;
 int     lastSeqLength = 16;
@@ -80,9 +80,16 @@ AudioConnection          patchCord3(dc1, 0, audioOutput, 0);
 AudioConnection          patchCord4(dc2, 0, audioOutput, 1);
 AudioControlSGTL5000     sgtl5000_1;
 
+AudioMixer4              inputDC1;
+AudioMixer4              inputDC2;
+AudioConnection          patchCord5(audioInput, 0, inputDC1, 0);
+AudioConnection          patchCord6(audioInput, 1, inputDC2, 0);
+
+#define regBits 16  // num of bits considered for register
+#define voctType uint16_t
 byte b[4] = { random(16), random(16), random(16), random(16) } ; // change with appropriate function
 uint32_t register_32b = (b[3] << 24) | (b[2] << 16) | ( b[1] << 8 ) | (b[0]); //register initial status (random)
-uint16_t voct = register_32b >> 16;
+voctType voct = register_32b >> regBits;
 byte last = 0;
 byte flip = 0; //DEBUG only
 float trig1;
@@ -220,21 +227,30 @@ void BernoulliGate(AudioAnalyzeRMS *input, float *trig, float *last_input,  int 
 #define Nmem 5  //important!! change the init of cv_mem variable (next line) if you want dynamic allocation
 float cv_mem[Nmem] =  {0, 0, 0, 0, 0};
 float offset_max = 0;
+unsigned int mem_wridx = 0;
 
 float memMax(){
   
-  int max_v = 0;
-  //int max_i = 0;
-
-  for ( int i = 0; i < sizeof(cv_mem)/sizeof(cv_mem[0]); i++ )
+  float max_v = 0;
+  /*for(int i=0; i<Nmem; i++){
+      Serial.print("mem[");
+      Serial.print(i);
+      Serial.print("]=");
+      Serial.print(cv_mem[i]);
+      Serial.println(" ");
+    }*/
+  for ( int i = 0; i < Nmem; i++ )
   {
     if ( cv_mem[i] > max_v )
     {
       max_v = cv_mem[i];
-      //max_i = i;
     }
+    
   }
+  /*Serial.print("Max is ");
+  Serial.println(max_v);*/
   return max_v;
+  
 }
 
 void turingMachine()
@@ -250,10 +266,10 @@ void turingMachine()
   }
 
   if (input_2.available()) {
-      last_input_2 = input_2.read();
-      //in_offset = ((last_input_2/1.0)-.5);
-      in_offset = last_input_2;
+      in_offset = input_2.read();   // TODO WE ARE READING THE RMS, NOT THE REAL INPUT
+      //in_offset = inputDC2.read();
   }
+  
   
   trig1 = last_input_1;    
   if (trig1 > 0.5) {
@@ -279,35 +295,52 @@ void turingMachine()
         pulse_last = millis();
       }
 
+      //moving maxima on offset (so that when it stays 0., the output value is not constrained to 0.5)
+      mem_wridx = (mem_wridx + 1) % Nmem;  // compute the current memory 
+      
+      cv_mem[mem_wridx] = in_offset;   // save current offset input into the mem_wridx-th array cell
+      offset_max = memMax(); // get current max
+
+      float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
+      voct = register_32b >> regBits;
+      float max_voct = pow(2.0, regBits) - 1;
+      float min_voct = pow(2.0, 0) - 1; // i.e. 0
+      float norm_voct = ((((float) voct) - min_voct)/ (max_voct - min_voct)); // [0..1] from 16 bit variable
+      //norm_voct = (2*norm_voct-1) *(lowerPotVal);
+      //dc1.amplitude(write_val);
+      
+      //float norm_writeval = (norm_voct + in_offset)/(1.0+offset_max);  // constrain to [0,1] based on current 
+      float norm_writeval = norm_voct;
+      float write_val = (2* -1)*lowerPotVal + in_offset; // move to [-1,1] range and apply scaling. Add 
+      // avoid clipping 
+      if (write_val > 1.0) write_val = 1.0;   
+      if (write_val < -1.0) write_val = -1.0;  
+      // write the output value
+      dc1.amplitude(write_val);
+
+      Serial.print("norm_voct: ");
+      Serial.print(norm_voct);
+      Serial.print(" in_offset: ");
+      Serial.print(in_offset);
+      Serial.print(" offset_max: ");
+      Serial.println(offset_max);
+      Serial.print(" writeval  ");
+      Serial.println(write_val);
     }
      
   }else {
     // else trig is down 
     if (clockUp > 0) {  
             writeLED(0, LOW);
-            clockUp = 0;       
+            clockUp = 0;   
         }
   }
 
   if((millis() - pulse_last) >= pulse_duration)
         isPulse = false;
   
-  float lowerPotVal = analogRead(lowerPotInput)/1024.0; // [0..1]
-  voct = register_32b >> 16; 
-  float write_val = (((float) voct) / 65535.0)*lowerPotVal; // [0..1] from 16 bit variable
-  //dc1.amplitude(write_val);
-
-  //moving maxima on offset (so that when it stays 0., the output value is not constrained to 0.5)
-
-  unsigned int mem_wridx = millis() % Nmem;  // compute the current memory 
-  cv_mem[mem_wridx] = in_offset;   // save current offset input into the mem_wridx-th array cell
-  
-  
-  offset_max = memMax(); // get current max
-  dc1.amplitude((write_val + in_offset)/(1.0+offset_max));
-  
   if (isPulse){
-    dc2.amplitude(1.0);
+    dc2.amplitude(1.0); 
   }else{
     dc2.amplitude(0.0);
   }
