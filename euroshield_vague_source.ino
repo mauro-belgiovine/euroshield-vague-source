@@ -80,10 +80,11 @@ AudioConnection          patchCord3(dc1, 0, audioOutput, 0);
 AudioConnection          patchCord4(dc2, 0, audioOutput, 1);
 AudioControlSGTL5000     sgtl5000_1;
 
-AudioMixer4              inputDC1;
-AudioMixer4              inputDC2;
-AudioConnection          patchCord5(audioInput, 0, inputDC1, 0);
-AudioConnection          patchCord6(audioInput, 1, inputDC2, 0);
+AudioAnalyzePeak readDC1;
+AudioAnalyzePeak readDC2;
+AudioConnection          patchCord5(audioInput, 0, readDC1, 0);
+AudioConnection          patchCord6(audioInput, 1, readDC2, 0);   
+
 
 #define regBits 16  // num of bits considered for register
 #define voctType uint16_t
@@ -266,8 +267,9 @@ void turingMachine()
   }
 
   if (input_2.available()) {
-      in_offset = input_2.read();   // TODO WE ARE READING THE RMS, NOT THE REAL INPUT
-      //in_offset = inputDC2.read();
+      //in_offset = input_2.read();   // TODO WE ARE READING THE RMS, NOT THE REAL INPUT
+      //in_offset = analogRead(inputDC2); // I DON'T KNOW HOW TO MAKE THIS WORK.
+      in_offset = readDC2.readDcAverage();
   }
   
   
@@ -311,7 +313,7 @@ void turingMachine()
       
       //float norm_writeval = (norm_voct + in_offset)/(1.0+offset_max);  // constrain to [0,1] based on current 
       float norm_writeval = norm_voct;
-      float write_val = (2* -1)*lowerPotVal + in_offset; // move to [-1,1] range and apply scaling. Add 
+      float write_val = (2*norm_writeval-1)*lowerPotVal + in_offset; // move to [-1,1] range and apply scaling. Add 
       // avoid clipping 
       if (write_val > 1.0) write_val = 1.0;   
       if (write_val < -1.0) write_val = -1.0;  
