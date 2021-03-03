@@ -23,7 +23,7 @@ There are four Modes available on the module and it is possible to switch to the
   * *Upper knob*: probabilty of change
   * *Lower knob*: scale
   * *CV Input #1*: Clock in
-  * *CV Input #2* - Internal sequencer notes are added (scaled) to an input signal (i.e. another sequence that one wants to alter with some randomness from TM)
+  * *CV Input #2* - Internal sequencer notes are added (scaled) to an input signal (i.e. another sequence that one wants to alter with some randomness from TM). See Appendix for additional details.
   * *CV Output #1*: Sequence step CV out
   * *CV Output #2*: Pulse-1 = for each clock, sends out a trigger when the first bit of register is 1.
 
@@ -35,6 +35,17 @@ There are four Modes available on the module and it is possible to switch to the
   * *CV Output #1*: trigger #1 output after probability 
   * *CV Output #2*: trigger # output after probability
   
+------------------
+
+## Appendix
+### Turing Machine (Mode A)
+
+Following are some screenshots of module's behaviour when in TM mode and an offset is inserted through `CV Input #2`. The output values for `CV Output #1` are depicted in yellow, while the corresponding value of `CV Input #2` is depicted in blue.
+
+Note also that different clock resolution (from `*CV Input #1`) will lead to a different sampling rate, as the TM's ouptut value is selected in a sample-and-hold (S&H) manner.
+
+![Example 1](img/screen1.png?raw=true "Example 1")
+![Example 2](img/screen2.png?raw=true "Example 2")
 ------------------
 
 # TODOs
